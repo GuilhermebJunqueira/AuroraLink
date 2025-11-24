@@ -1,79 +1,195 @@
-✅ Explicação simples: Como o HTTP é usado no meu projeto
+AuroraLink – REST API em Java Puro
 
-No meu projeto AuroraLink, eu implementei a API sem usar frameworks, então eu mesmo precisei montar a parte do HTTP.
-Para isso, eu usei a classe HttpServer do próprio Java, que já vem no JDK.
+Este projeto faz parte da disciplina semestral e tem como objetivo desenvolver uma REST API em Java, sem usar frameworks, implementando CRUD completo para duas entidades em relacionamento 1..N:
+Empresa (1) → N Funcionários.
 
-👉 O que essa parte faz?
+A API foi construída utilizando apenas recursos nativos do Java, com sockets HTTP básicos, SQLite como banco embarcado, e uma arquitetura modular para demonstrar Abstração, Encapsulamento, Herança e Polimorfismo.
 
-Ela é responsável por:
+🔹 Tecnologias Utilizadas
 
-abrir uma porta (geralmente a 8080)
+Java 22 (JDK 22)
 
-receber requisições HTTP (GET, POST, PUT, DELETE)
+SQLite (banco de dados embarcado)
 
-mandar essas requisições pro lugar certo (os controllers)
+Maven (gerenciamento de dependências)
 
-devolver uma resposta HTTP para o cliente
+HTTPServer nativo (com.sun.net.httpserver.HttpServer)
 
-🧩 Como funciona dentro do meu projeto
-1. Server.java
+Gson (para JSON ↔ objetos Java)
 
-É aqui que tudo começa.
+🔹 Entidades do Projeto
+Empresa
 
-Eu inicio o HttpServer nessa classe.
+id
 
-Falo qual porta ele vai usar.
+nome
 
-Registro os endpoints, tipo /empresas e /funcionarios.
+cidade
 
-Depois ele fica “escutando” as requisições.
+Funcionário
 
-É como ligar uma máquina e deixá-la esperando alguém chamar.
+id
 
-2. Router.java
+nome
 
-Aqui eu faço uma lógica para “direcionar” cada requisição.
+empresaId (FK)
 
-Exemplo:
+tipo (CLT ou PJ)
 
-Se chega /empresas → mando para o EmpresaController
+salário calculado via polimorfismo
 
-Se chega /funcionarios → mando para o FuncionarioController
+Herança
+FuncionarioBase (abstrata)
+    ↑
+    ├── FuncionarioCLT
+    └── FuncionarioPJ
 
-Ele olha:
 
-qual é o caminho
+Cada tipo implementa seu próprio calcularSalario().
 
-qual é o método HTTP (GET/POST/PUT/DELETE)
+🌐 Como funciona a API HTTP
 
-e envia para o controller correto
+O Java possui uma classe chamada:
 
-É literalmente um roteador, como o Wi-Fi, mas de URLs.
+com.sun.net.httpserver.HttpServer
 
-3. Controllers
 
-Eles são os responsáveis por tratar a requisição HTTP de verdade.
+Ela permite criar um servidor HTTP sem usar frameworks.
+No projeto, ela está sendo usada desta forma:
 
-Ex.:
+Server.java cria o servidor
 
-GET /empresas → chama o método listar()
+Router.java define as rotas, como:
 
-POST /empresas → chama salvar()
+GET /empresas
 
-DELETE /empresas/3 → chama deletar(3)
+POST /empresas
 
-Os controllers pegam os dados da requisição,
-chamam o service/repository,
-e devolvem uma resposta HTTP formatada.
+GET /funcionarios
 
-4. Resposta HTTP
+Cada rota chama o respectivo Controller
 
-Toda vez que o controller termina, ele devolve:
+O Controller chama o Service
 
-Código HTTP
-(200, 201, 400, 404, etc.)
+O Service chama o Repository
 
-Corpo da resposta (JSON)
+O Repository acessa o banco via SQLite (JDBC)
 
-Isso aparece no Postman ou no navegador
-e é como qualquer API profissional funciona.
+Ou seja:
+
+HTTP → Controller → Service → Repository → SQLite
+
+📁 Estrutura do Projeto
+src/main/java/com
+│
+├── Main.java
+├── Server.java
+├── Router.java
+│
+├── controllers/
+│   ├── EmpresaController.java
+│   └── FuncionarioController.java
+│
+├── service/
+│   ├── EmpresaService.java
+│   └── FuncionarioService.java
+│
+├── repository/
+│   ├── EmpresaRepository.java
+│   └── FuncionarioRepository.java
+│
+├── database/
+│   └── Database.java
+│
+├── model/
+│   ├── Empresa.java
+│   ├── Funcionario.java
+│   ├── FuncionarioBase.java
+│   ├── FuncionarioCLT.java
+│   └── FuncionarioPJ.java
+│
+└── util/
+    ├── JsonUtil.java
+    └── Database.java
+
+🗂️ Banco de Dados
+
+O arquivo auroralink.db é criado automaticamente na raiz do projeto.
+
+As tabelas são criadas no primeiro uso pelo arquivo:
+
+src/main/java/com/database/Database.java
+
+▶️ Como Rodar o Projeto
+1 — Clonar o repositório
+git clone https://github.com/GuilhermebJunqueira/AuroraLink.git
+cd AuroraLink
+
+2 — Build via Maven
+mvn clean package
+
+3 — Executar
+java -jar target/AuroraLink.jar
+
+
+O servidor inicia em:
+
+http://localhost:8080
+
+📌 Rotas da API
+EMPRESAS
+✔ GET /empresas
+
+Lista todas as empresas.
+
+✔ GET /empresas/{id}
+
+Busca empresa pelo ID.
+
+✔ POST /empresas
+{
+  "nome": "TechCorp",
+  "cidade": "São Paulo"
+}
+
+✔ PUT /empresas/{id}
+✔ DELETE /empresas/{id}
+FUNCIONÁRIOS
+✔ GET /funcionarios
+
+Lista todos os funcionários.
+
+✔ POST /funcionarios
+{
+  "nome": "Carlos Silva",
+  "empresaId": 1,
+  "tipo": "CLT"
+}
+
+
+O salário é calculado automaticamente via polimorfismo.
+
+🎓 Conceitos Demonstrados
+Abstração
+
+Interface clara entre camadas (Controller → Service → Repository)
+
+Encapsulamento
+
+Classes com atributos privados + getters/setters
+
+Herança
+
+FuncionarioBase → FuncionarioCLT / FuncionarioPJ
+
+Polimorfismo
+calcularSalario()
+
+
+é diferente em cada tipo de funcionário.
+
+Baixo acoplamento
+
+Camadas independentes
+
+Classes pequenas e focadas
