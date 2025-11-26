@@ -73,8 +73,15 @@ public class EmpresaController {
 
     private void getEmpresa(HttpExchange exchange, int id) throws IOException, SQLException {
         Empresa empresa = empresaService.findById(id);
+
+        if (empresa == null) {
+            error(exchange, 404, "Empresa com ID " + id + " não existe");
+            return;
+        }
+
         JsonUtil.writeJson(exchange, 200, JsonUtil.toJson(empresa));
     }
+
 
     private void updateEmpresa(HttpExchange exchange, int id) throws IOException, SQLException {
         String body = JsonUtil.readBody(exchange);
@@ -84,9 +91,20 @@ public class EmpresaController {
     }
 
     private void deleteEmpresa(HttpExchange exchange, int id) throws IOException, SQLException {
+        Empresa empresa = empresaService.findById(id);
+
+        if (empresa == null) {
+            error(exchange, 404, "Empresa com ID " + id + " não existe para deletar");
+            return;
+        }
+
         empresaService.delete(id);
-        JsonUtil.writeJson(exchange, 204, "");
+
+        String msg = "{\"mensagem\":\"Empresa deletada com sucesso\",\"id\":" + id + "}";
+        JsonUtil.writeJson(exchange, 200, msg);
     }
+
+
 
     private void listFuncionariosByEmpresa(HttpExchange exchange, int idEmpresa) throws IOException, SQLException {
         var funcionarios = funcionarioService.findAllByEmpresa(idEmpresa);

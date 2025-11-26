@@ -80,10 +80,11 @@ public class EmpresaRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            stmt.setInt(2, id);
             stmt.executeUpdate();
         }
     }
+
+
 
     public boolean existsById(int id) throws SQLException {
         String sql = "SELECT 1 FROM empresa WHERE id = ?";

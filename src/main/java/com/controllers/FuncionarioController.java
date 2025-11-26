@@ -51,8 +51,15 @@ public class FuncionarioController {
 
     private void getFuncionario(HttpExchange exchange, int id) throws IOException, SQLException {
         Funcionario funcionario = funcionarioService.findById(id);
+
+        if (funcionario == null) {
+            error(exchange, 404, "Funcionário com ID " + id + " não existe");
+            return;
+        }
+
         JsonUtil.writeJson(exchange, 200, JsonUtil.toJson(funcionario));
     }
+
 
     private void updateFuncionario(HttpExchange exchange, int id) throws IOException, SQLException {
         String body = JsonUtil.readBody(exchange);
@@ -63,8 +70,12 @@ public class FuncionarioController {
 
     private void deleteFuncionario(HttpExchange exchange, int id) throws IOException, SQLException {
         funcionarioService.delete(id);
-        JsonUtil.writeJson(exchange, 204, "");
+
+        String resposta = "{ \"mensagem\": \"Funcionário deletado com sucesso\", \"id\": " + id + " }";
+        JsonUtil.writeJson(exchange, 200, resposta);
     }
+
+
 
     private void notFound(HttpExchange exchange) throws IOException {
         error(exchange, 404, "Rota não encontrada");
