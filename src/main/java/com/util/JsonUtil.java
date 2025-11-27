@@ -27,7 +27,7 @@ public class JsonUtil {
         exchange.getResponseBody().close();
     }
 
-    // ---------------------- EMPRESA ----------------------
+
 
     public static Empresa fromJsonEmpresa(String json) {
         Empresa e = new Empresa();
@@ -54,7 +54,7 @@ public class JsonUtil {
         return sb.toString();
     }
 
-    // ---------------------- FUNCIONARIO ----------------------
+
 
     public static FuncionarioBase fromJsonFuncionario(String json) {
         String tipo = getJsonValue(json, "tipo");
@@ -88,7 +88,6 @@ public class JsonUtil {
         return sb.toString();
     }
 
-    // ---------------------- JSON PARSER SIMPLES ----------------------
 
     public static String getJsonValue(String json, String key) {
         String find = "\"" + key + "\"";
