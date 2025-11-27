@@ -26,17 +26,23 @@ public abstract class FuncionarioBase {
         return id;
     }
 
-    public void setId(int id) { this.id = id; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getNome() {
         return nome;
     }
 
-    public void setNome(String nome) { this.nome = nome; }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
 
     public int getEmpresaId() {
         return empresaId;
     }
 
-    public void setEmpresaId(int empresaId) { this.empresaId = empresaId; }
+    public void setEmpresaId(int empresaId) {
+        this.empresaId = empresaId;
+    }
 }

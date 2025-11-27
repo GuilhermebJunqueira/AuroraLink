@@ -11,15 +11,7 @@ public class EmpresaService {
     private final EmpresaRepository empresaRepository = new EmpresaRepository();
 
     public Empresa create(Empresa empresa) throws SQLException {
-        if (empresa.getNome() == null || empresa.getNome().isBlank()) {
-            throw new IllegalArgumentException("Nome da empresa é obrigatório");
-        }
-        if (empresa.getCnpj() == null || empresa.getCnpj().isBlank()) {
-            throw new IllegalArgumentException("CNPJ da empresa é obrigatório");
-        }
-
         empresaRepository.create(empresa);
-        // Poderia retornar com ID gerado, mas para simplificar vamos só retornar o objeto.
         return empresa;
     }
 
@@ -28,18 +20,18 @@ public class EmpresaService {
     }
 
     public Empresa findById(int id) throws SQLException {
-        Empresa empresa = empresaRepository.findById(id);
-        if (empresa == null) {
+        Empresa e = empresaRepository.findById(id);
+        if (e == null) {
             throw new IllegalArgumentException("Empresa não encontrada");
         }
-        return empresa;
+        return e;
     }
 
     public void update(int id, Empresa empresa) throws SQLException {
-        Empresa atual = findById(id); // lança exceção se não existir
-        atual.setNome(empresa.getNome());
-        atual.setCnpj(empresa.getCnpj());
-        empresaRepository.update(atual);
+        Empresa e = findById(id);
+        e.setNome(empresa.getNome());
+        e.setCnpj(empresa.getCnpj());
+        empresaRepository.update(e);
     }
 
     public void delete(int id) throws SQLException {

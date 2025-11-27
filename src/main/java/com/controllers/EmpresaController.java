@@ -25,7 +25,6 @@ public class EmpresaController {
                 return;
             }
 
-            // /empresa/{id}
             if (path.matches("^/empresa/\\d+$")) {
                 int id = Integer.parseInt(path.split("/")[2]);
                 switch (method) {
@@ -37,7 +36,6 @@ public class EmpresaController {
                 return;
             }
 
-            // /empresa/{id}/funcionarios
             if (path.matches("^/empresa/\\d+/funcionarios$")) {
                 int idEmpresa = Integer.parseInt(path.split("/")[2]);
                 if (method.equals("GET")) {
@@ -60,6 +58,10 @@ public class EmpresaController {
 
     private void listEmpresas(HttpExchange exchange) throws IOException, SQLException {
         var empresas = empresaService.findAll();
+        if (empresas == null || empresas.isEmpty()) {
+            JsonUtil.writeJson(exchange, 200, "{\"mensagem\":\"Nenhuma empresa cadastrada\"}");
+            return;
+        }
         String json = JsonUtil.toJsonEmpresas(empresas);
         JsonUtil.writeJson(exchange, 200, json);
     }
@@ -85,11 +87,16 @@ public class EmpresaController {
 
     private void deleteEmpresa(HttpExchange exchange, int id) throws IOException, SQLException {
         empresaService.delete(id);
-        JsonUtil.writeJson(exchange, 204, "");
+        String json = "{\"mensagem\":\"Empresa deletada com sucesso\",\"id\":" + id + "}";
+        JsonUtil.writeJson(exchange, 200, json);
     }
 
     private void listFuncionariosByEmpresa(HttpExchange exchange, int idEmpresa) throws IOException, SQLException {
         var funcionarios = funcionarioService.findAllByEmpresa(idEmpresa);
+        if (funcionarios == null || funcionarios.isEmpty()) {
+            JsonUtil.writeJson(exchange, 200, "{\"mensagem\":\"Nenhum funcionário cadastrado para essa empresa\"}");
+            return;
+        }
         String json = JsonUtil.toJsonFuncionarios(funcionarios);
         JsonUtil.writeJson(exchange, 200, json);
     }

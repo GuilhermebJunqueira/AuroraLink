@@ -1,7 +1,9 @@
 package com.util;
 
 import com.model.Empresa;
-import com.model.Funcionario;
+import com.model.FuncionarioBase;
+import com.model.FuncionarioCLT;
+import com.model.FuncionarioPJ;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
@@ -17,114 +19,104 @@ public class JsonUtil {
         }
     }
 
-    public static void writeJson(HttpExchange exchange, int statusCode, String json) throws IOException {
-        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+    public static void writeJson(HttpExchange exchange, int code, String json) throws IOException {
+        byte[] b = json.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
-        exchange.sendResponseHeaders(statusCode, bytes.length);
-        exchange.getResponseBody().write(bytes);
+        exchange.sendResponseHeaders(code, b.length);
+        exchange.getResponseBody().write(b);
         exchange.getResponseBody().close();
     }
 
-    // ---------------- EMPRESA ----------------
+    // ---------------------- EMPRESA ----------------------
 
     public static Empresa fromJsonEmpresa(String json) {
         Empresa e = new Empresa();
-        e.setNome(extract(json, "nome"));
-        e.setCnpj(extract(json, "cnpj"));
+        e.setNome(getJsonValue(json, "nome"));
+        e.setCnpj(getJsonValue(json, "cnpj"));
         return e;
     }
 
     public static String toJson(Empresa e) {
         return "{"
                 + "\"id\":" + e.getId() + ","
-                + "\"nome\":\"" + escape(e.getNome()) + "\","
-                + "\"cnpj\":\"" + escape(e.getCnpj()) + "\""
+                + "\"nome\":\"" + e.getNome() + "\","
+                + "\"cnpj\":\"" + e.getCnpj() + "\""
                 + "}";
     }
 
-    public static String toJsonEmpresas(List<Empresa> empresas) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (int i = 0; i < empresas.size(); i++) {
-            sb.append(toJson(empresas.get(i)));
-            if (i < empresas.size() - 1) sb.append(",");
+    public static String toJsonEmpresas(List<Empresa> lista) {
+        StringBuilder sb = new StringBuilder("[");
+        for (Empresa e : lista) {
+            sb.append(toJson(e)).append(",");
         }
+        if (!lista.isEmpty()) sb.setLength(sb.length() - 1);
         sb.append("]");
         return sb.toString();
     }
 
-    // ---------------- FUNCIONARIO ----------------
+    // ---------------------- FUNCIONARIO ----------------------
 
-    public static Funcionario fromJsonFuncionario(String json) {
-        Funcionario f = new Funcionario();
-        f.setNome(extract(json, "nome"));
-        String tipo = extract(json, "tipo");
-        f.setTipo(tipo);
+    public static FuncionarioBase fromJsonFuncionario(String json) {
+        String tipo = getJsonValue(json, "tipo");
+        String nome = getJsonValue(json, "nome");
+        int empresaId = getJsonInt(json, "empresaId");
 
-        String empresaIdStr = extract(json, "empresaId");
-        if (empresaIdStr != null && !empresaIdStr.isBlank()) {
-            f.setEmpresaId(Integer.parseInt(empresaIdStr));
-        }
-        // salario será calculado no service via polimorfismo
-        return f;
+        return "CLT".equalsIgnoreCase(tipo)
+                ? new FuncionarioCLT(nome, empresaId)
+                : new FuncionarioPJ(nome, empresaId);
     }
 
-    public static String toJson(Funcionario f) {
+    public static String toJsonFuncionario(FuncionarioBase f) {
+        String tipo = (f instanceof FuncionarioCLT) ? "CLT" : "PJ";
+
         return "{"
                 + "\"id\":" + f.getId() + ","
-                + "\"nome\":\"" + escape(f.getNome()) + "\","
-                + "\"salario\":" + f.getSalario() + ","
-                + "\"tipo\":\"" + escape(f.getTipo()) + "\","
-                + "\"empresaId\":" + f.getEmpresaId()
+                + "\"nome\":\"" + f.getNome() + "\","
+                + "\"empresaId\":" + f.getEmpresaId() + ","
+                + "\"tipo\":\"" + tipo + "\","
+                + "\"salario\":" + f.calcularSalario()
                 + "}";
     }
 
-    public static String toJsonFuncionarios(List<Funcionario> funcionarios) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (int i = 0; i < funcionarios.size(); i++) {
-            sb.append(toJson(funcionarios.get(i)));
-            if (i < funcionarios.size() - 1) sb.append(",");
+    public static String toJsonFuncionarios(List<FuncionarioBase> lista) {
+        StringBuilder sb = new StringBuilder("[");
+        for (FuncionarioBase f : lista) {
+            sb.append(toJsonFuncionario(f)).append(",");
         }
+        if (!lista.isEmpty()) sb.setLength(sb.length() - 1);
         sb.append("]");
         return sb.toString();
     }
 
-    // ------------- helpers simples -------------
+    // ---------------------- JSON PARSER SIMPLES ----------------------
 
-    private static String extract(String json, String field) {
-        // MUITO simples, só pra este trabalho – assume estrutura: "field": "valor" ou "field": 123
-        String key = "\"" + field + "\"";
-        int idx = json.indexOf(key);
-        if (idx == -1) return null;
-        int colon = json.indexOf(":", idx);
-        if (colon == -1) return null;
-        int start = colon + 1;
+    public static String getJsonValue(String json, String key) {
+        String find = "\"" + key + "\"";
+        int i = json.indexOf(find);
+        if (i == -1) return null;
 
-        // pula espaços
-        while (start < json.length() && Character.isWhitespace(json.charAt(start))) {
-            start++;
+        int s = json.indexOf(":", i) + 1;
+        while (Character.isWhitespace(json.charAt(s))) s++;
+
+        if (json.charAt(s) == '"') {
+            int e = json.indexOf("\"", s + 1);
+            return json.substring(s + 1, e);
         }
 
-        char first = json.charAt(start);
-        if (first == '\"') {
-            int end = json.indexOf("\"", start + 1);
-            if (end == -1) return null;
-            return json.substring(start + 1, end);
-        } else {
-            int end = start;
-            while (end < json.length()
-                    && !Character.isWhitespace(json.charAt(end))
-                    && json.charAt(end) != ','
-                    && json.charAt(end) != '}') {
-                end++;
-            }
-            return json.substring(start, end);
-        }
+        int e = s;
+        while (e < json.length() && json.charAt(e) != ',' && json.charAt(e) != '}')
+            e++;
+
+        return json.substring(s, e).trim();
     }
 
-    private static String escape(String value) {
-        if (value == null) return "";
-        return value.replace("\"", "\\\"");
+    public static int getJsonInt(String json, String key) {
+        String v = getJsonValue(json, key);
+        return v != null ? Integer.parseInt(v) : 0;
+    }
+
+    public static double getJsonDouble(String json, String key) {
+        String v = getJsonValue(json, key);
+        return v != null ? Double.parseDouble(v) : 0.0;
     }
 }

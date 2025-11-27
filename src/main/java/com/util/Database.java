@@ -7,7 +7,7 @@ import java.sql.Statement;
 
 public class Database {
 
-    private static final String URL = "jdbc:sqlite:auroralink.db";
+    private static final String URL = "jdbc:sqlite:aurorlalink.db";
 
     static {
         init();
@@ -21,7 +21,6 @@ public class Database {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // Tabela Empresa
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS empresa (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +29,6 @@ public class Database {
                 );
             """);
 
-            // Tabela Funcionario
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS funcionario (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,8 +40,7 @@ public class Database {
                 );
             """);
 
-            System.out.println("Banco inicializado com sucesso.");
-
+            System.out.println("Banco pronto!");
         } catch (Exception e) {
             e.printStackTrace();
         }
