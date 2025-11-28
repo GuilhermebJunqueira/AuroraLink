@@ -27,7 +27,7 @@ public class JsonUtil {
         exchange.getResponseBody().close();
     }
 
-
+    // ========= EMPRESA =========
 
     public static Empresa fromJsonEmpresa(String json) {
         Empresa e = new Empresa();
@@ -39,8 +39,8 @@ public class JsonUtil {
     public static String toJson(Empresa e) {
         return "{"
                 + "\"id\":" + e.getId() + ","
-                + "\"nome\":\"" + e.getNome() + "\","
-                + "\"cnpj\":\"" + e.getCnpj() + "\""
+                + "\"nome\":\"" + escape(e.getNome()) + "\","
+                + "\"cnpj\":\"" + escape(e.getCnpj()) + "\""
                 + "}";
     }
 
@@ -54,28 +54,79 @@ public class JsonUtil {
         return sb.toString();
     }
 
-
+    // ========= FUNCIONÁRIO =========
 
     public static FuncionarioBase fromJsonFuncionario(String json) {
-        String tipo = getJsonValue(json, "tipo");
+        String tipo = getJsonValue(json, "tipo");   // usa nosso parser
         String nome = getJsonValue(json, "nome");
         int empresaId = getJsonInt(json, "empresaId");
 
-        return "CLT".equalsIgnoreCase(tipo)
-                ? new FuncionarioCLT(nome, empresaId)
-                : new FuncionarioPJ(nome, empresaId);
+        if (tipo == null) tipo = "PJ"; // fallback seguro
+
+        if (tipo.equalsIgnoreCase("CLT")) {
+            FuncionarioCLT f = new FuncionarioCLT();
+            f.setNome(nome);
+            f.setEmpresaId(empresaId);
+
+            double salarioFixo     = getJsonDouble(json, "salarioFixo");
+            double beneficios      = getJsonDouble(json, "beneficios");
+            double valeTransporte  = getJsonDouble(json, "valeTransporte");
+            double planoSaude      = getJsonDouble(json, "planoSaude");
+            double bonusAnual      = getJsonDouble(json, "bonusAnual");
+
+            if (salarioFixo     > 0) f.setSalarioFixo(salarioFixo);
+            if (beneficios      > 0) f.setBeneficios(beneficios);
+            if (valeTransporte  > 0) f.setValeTransporte(valeTransporte);
+            if (planoSaude      > 0) f.setPlanoSaude(planoSaude);
+            if (bonusAnual      > 0) f.setBonusAnual(bonusAnual);
+
+            return f;
+        } else {
+            FuncionarioPJ f = new FuncionarioPJ();
+            f.setNome(nome);
+            f.setEmpresaId(empresaId);
+
+            double valorContrato         = getJsonDouble(json, "valorContrato");
+            int qtdHorasMensais          = getJsonInt(json, "qtdHorasMensais");
+            double valorHoraExtra        = getJsonDouble(json, "valorHoraExtra");
+            int tempoProjetoMeses        = getJsonInt(json, "tempoProjetoMeses");
+            double taxaServicoPercentual = getJsonDouble(json, "taxaServicoPercentual");
+
+            if (valorContrato         > 0) f.setValorContrato(valorContrato);
+            if (qtdHorasMensais       > 0) f.setQtdHorasMensais(qtdHorasMensais);
+            if (valorHoraExtra        > 0) f.setValorHoraExtra(valorHoraExtra);
+            if (tempoProjetoMeses     > 0) f.setTempoProjetoMeses(tempoProjetoMeses);
+            if (taxaServicoPercentual > 0) f.setTaxaServicoPercentual(taxaServicoPercentual);
+
+            return f;
+        }
     }
 
     public static String toJsonFuncionario(FuncionarioBase f) {
-        String tipo = (f instanceof FuncionarioCLT) ? "CLT" : "PJ";
+        StringBuilder sb = new StringBuilder("{");
 
-        return "{"
-                + "\"id\":" + f.getId() + ","
-                + "\"nome\":\"" + f.getNome() + "\","
-                + "\"empresaId\":" + f.getEmpresaId() + ","
-                + "\"tipo\":\"" + tipo + "\","
-                + "\"salario\":" + f.calcularSalario()
-                + "}";
+        sb.append("\"id\":").append(f.getId()).append(",");
+        sb.append("\"nome\":\"").append(escape(f.getNome())).append("\",");
+        sb.append("\"empresaId\":").append(f.getEmpresaId()).append(",");
+        sb.append("\"tipo\":\"").append(f instanceof FuncionarioCLT ? "CLT" : "PJ").append("\",");
+        sb.append("\"salario\":").append(f.calcularSalario());
+
+        if (f instanceof FuncionarioCLT clt) {
+            sb.append(",\"salarioFixo\":").append(clt.getSalarioFixo());
+            sb.append(",\"beneficios\":").append(clt.getBeneficios());
+            sb.append(",\"valeTransporte\":").append(clt.getValeTransporte());
+            sb.append(",\"planoSaude\":").append(clt.getPlanoSaude());
+            sb.append(",\"bonusAnual\":").append(clt.getBonusAnual());
+        } else if (f instanceof FuncionarioPJ pj) {
+            sb.append(",\"valorContrato\":").append(pj.getValorContrato());
+            sb.append(",\"qtdHorasMensais\":").append(pj.getQtdHorasMensais());
+            sb.append(",\"valorHoraExtra\":").append(pj.getValorHoraExtra());
+            sb.append(",\"tempoProjetoMeses\":").append(pj.getTempoProjetoMeses());
+            sb.append(",\"taxaServicoPercentual\":").append(pj.getTaxaServicoPercentual());
+        }
+
+        sb.append("}");
+        return sb.toString();
     }
 
     public static String toJsonFuncionarios(List<FuncionarioBase> lista) {
@@ -88,6 +139,7 @@ public class JsonUtil {
         return sb.toString();
     }
 
+    // ========= HELPERS DE JSON =========
 
     public static String getJsonValue(String json, String key) {
         String find = "\"" + key + "\"";
@@ -95,10 +147,13 @@ public class JsonUtil {
         if (i == -1) return null;
 
         int s = json.indexOf(":", i) + 1;
-        while (Character.isWhitespace(json.charAt(s))) s++;
+        while (s < json.length() && Character.isWhitespace(json.charAt(s))) s++;
+
+        if (s >= json.length()) return null;
 
         if (json.charAt(s) == '"') {
             int e = json.indexOf("\"", s + 1);
+            if (e == -1) return null;
             return json.substring(s + 1, e);
         }
 
@@ -111,11 +166,17 @@ public class JsonUtil {
 
     public static int getJsonInt(String json, String key) {
         String v = getJsonValue(json, key);
-        return v != null ? Integer.parseInt(v) : 0;
+        return v != null && !v.isBlank() ? Integer.parseInt(v) : 0;
     }
 
     public static double getJsonDouble(String json, String key) {
         String v = getJsonValue(json, key);
-        return v != null ? Double.parseDouble(v) : 0.0;
+        return v != null && !v.isBlank() ? Double.parseDouble(v) : 0.0;
+    }
+
+    // ========= FUNÇÕES INTERNAS (SEM IMPORT DO JDK) =========
+
+    private static String escape(String value) {
+        return value == null ? "" : value.replace("\"", "\\\"");
     }
 }

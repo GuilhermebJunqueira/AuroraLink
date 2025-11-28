@@ -30,15 +30,31 @@ public class Database {
             """);
 
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS funcionario (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    salario REAL NOT NULL,
-                    tipo TEXT NOT NULL,
-                    empresa_id INTEGER NOT NULL,
-                    FOREIGN KEY (empresa_id) REFERENCES empresa(id)
-                );
-            """);
+    CREATE TABLE IF NOT EXISTS funcionario (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        salario REAL NOT NULL,
+        tipo TEXT NOT NULL,
+        empresa_id INTEGER NOT NULL,
+
+        -- Campos específicos de CLT
+        salario_fixo REAL,
+        beneficios REAL,
+        vale_transporte REAL,
+        plano_saude REAL,
+        bonus_anual REAL,
+
+        -- Campos específicos de PJ
+        valor_contrato REAL,
+        qtd_horas_mensais INTEGER,
+        valor_hora_extra REAL,
+        tempo_projeto_meses INTEGER,
+        taxa_servico_percentual REAL,
+
+        FOREIGN KEY (empresa_id) REFERENCES empresa(id)
+    );
+""");
+
 
             System.out.println("Banco pronto!");
         } catch (Exception e) {
